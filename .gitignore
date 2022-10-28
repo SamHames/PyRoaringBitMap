@@ -11,10 +11,7 @@ build
 dist
 *.egg-info
 amalgamation_demo.*
-roaring.*
-pyroaring.cpp
 MANIFEST
 docs/_build
 Pipfile.lock
-version.pxi
 .mypy_cache
