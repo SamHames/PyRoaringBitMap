@@ -11,3 +11,5 @@ files = ["roaring.c", "roaring.h"]
 
 for file in files:
 	r = urlretrieve(latest_release + file, os.path.join("pyroaring", file))
+
+print("If this is a new version of CRoaring, don't forget to update pyroaring/version.pxi")
