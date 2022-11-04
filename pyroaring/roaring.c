@@ -1,5 +1,5 @@
 // !!! DO NOT EDIT - THIS IS AN AUTO-GENERATED FILE !!!
-// Created by amalgamation.sh on Wed  7 Sep 2022 11:50:43 EDT
+// Created by amalgamation.sh on Wed 20 Jul 2022 16:25:25 EDT
 
 /*
  * The CRoaring project is under a dual license (Apache/MIT).
@@ -49,7 +49,7 @@
  * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
+ * DEALINGS IN THE SOFTWARE
  *
  * SPDX-License-Identifier: MIT
  */
@@ -114,11 +114,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#if CROARING_REGULAR_VISUAL_STUDIO
+#if defined(_MSC_VER)
 #include <intrin.h>
 #elif defined(HAVE_GCC_GET_CPUID) && defined(USE_GCC_GET_CPUID)
 #include <cpuid.h>
-#endif // CROARING_REGULAR_VISUAL_STUDIO
+#endif // defined(_MSC_VER)
 
 
 enum croaring_instruction_set {
@@ -163,7 +163,7 @@ static inline uint32_t dynamic_croaring_detect_supported_architectures() {
 static inline void cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
                          uint32_t *edx) {
 
-#if CROARING_REGULAR_VISUAL_STUDIO
+#if defined(_MSC_VER)
   int cpu_info[4];
   __cpuid(cpu_info, *eax);
   *eax = cpu_info[0];
@@ -235,32 +235,33 @@ static inline uint32_t dynamic_croaring_detect_supported_architectures() {
 #if defined(__x86_64__) || defined(_M_AMD64) // x64
 
 #if defined(__cplusplus)
+#include <atomic>
 static inline uint32_t croaring_detect_supported_architectures() {
-    // thread-safe as per the C++11 standard.
-    static uint32_t buffer = dynamic_croaring_detect_supported_architectures();
+    static std::atomic<int> buffer{CROARING_UNINITIALIZED};
+    if(buffer == CROARING_UNINITIALIZED) {
+      buffer = dynamic_croaring_detect_supported_architectures();
+    }
     return buffer;
 }
-#elif CROARING_VISUAL_STUDIO
+#elif defined(_MSC_VER) && !defined(__clang__)
 // Visual Studio does not support C11 atomics.
 static inline uint32_t croaring_detect_supported_architectures() {
     static int buffer = CROARING_UNINITIALIZED;
-    if (buffer == CROARING_UNINITIALIZED) {
+    if(buffer == CROARING_UNINITIALIZED) {
       buffer = dynamic_croaring_detect_supported_architectures();
     }
     return buffer;
 }
-#else // CROARING_VISUAL_STUDIO
+#else // defined(__cplusplus) and defined(_MSC_VER) && !defined(__clang__)
 #include <stdatomic.h>
 static inline uint32_t croaring_detect_supported_architectures() {
-    // we use an atomic for thread safety
-    static _Atomic uint32_t buffer = CROARING_UNINITIALIZED;
-    if (buffer == CROARING_UNINITIALIZED) {
-      // atomicity is sufficient
+    static _Atomic int buffer = CROARING_UNINITIALIZED;
+    if(buffer == CROARING_UNINITIALIZED) {
       buffer = dynamic_croaring_detect_supported_architectures();
     }
     return buffer;
 }
-#endif // CROARING_REGULAR_VISUAL_STUDIO
+#endif // defined(_MSC_VER) && !defined(__clang__)
 
 #ifdef ROARING_DISABLE_AVX
 static inline bool croaring_avx2() {
@@ -297,16 +298,6 @@ static inline uint32_t croaring_detect_supported_architectures() {
  *
  */
 
- /**
-  * All macros should be prefixed with either CROARING or ROARING.
-  * The library uses both ROARING_...
-  * as well as CROAIRING_ as prefixes. The ROARING_ prefix is for
-  * macros that are provided by the build system or that are closely
-  * related to the format. The header macros may also use ROARING_.
-  * The CROARING_ prefix is for internal macros that a user is unlikely
-  * to ever interact with.
-  */
-
 #ifndef INCLUDE_PORTABILITY_H_
 #define INCLUDE_PORTABILITY_H_
 
@@ -316,22 +307,6 @@ static inline uint32_t croaring_detect_supported_architectures() {
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
 #endif // __STDC_FORMAT_MACROS
-
-#ifdef _MSC_VER
-#define CROARING_VISUAL_STUDIO 1
-/**
- * We want to differentiate carefully between
- * clang under visual studio and regular visual
- * studio.
- */
-#ifdef __clang__
-// clang under visual studio
-#define CROARING_CLANG_VISUAL_STUDIO 1
-#else
-// just regular visual studio (best guess)
-#define CROARING_REGULAR_VISUAL_STUDIO 1
-#endif // __clang__
-#endif // _MSC_VER
 
 #if !(defined(_POSIX_C_SOURCE)) || (_POSIX_C_SOURCE < 200809L)
 #define _POSIX_C_SOURCE 200809L
@@ -351,7 +326,7 @@ static inline uint32_t croaring_detect_supported_architectures() {
 extern "C" {  // portability definitions are in global scope, not a namespace
 #endif
 
-#if CROARING_REGULAR_VISUAL_STUDIO && !defined(_WIN64) && !defined(CROARING_ACK_32BIT)
+#if defined(_MSC_VER) && !defined(__clang__) && !defined(_WIN64) && !defined(ROARING_ACK_32BIT)
 #pragma message( \
     "You appear to be attempting a 32-bit build under Visual Studio. We recommend a 64-bit build instead.")
 #endif
@@ -360,15 +335,15 @@ extern "C" {  // portability definitions are in global scope, not a namespace
 #error This code assumes  64-bit long longs (by use of the GCC intrinsics). Your system is not currently supported.
 #endif
 
-#if CROARING_REGULAR_VISUAL_STUDIO
+#if defined(_MSC_VER)
 #define __restrict__ __restrict
-#endif // CROARING_REGULAR_VISUAL_STUDIO
+#endif // defined(_MSC_VER
 
 
 
 #if defined(__x86_64__) || defined(_M_X64)
 // we have an x64 processor
-#define CROARING_IS_X64 1
+#define CROARING_IS_X64
 
 #if defined(_MSC_VER) && (_MSC_VER < 1910)
 // Old visual studio systems won't support AVX2 well.
@@ -381,51 +356,14 @@ extern "C" {  // portability definitions are in global scope, not a namespace
 #undef CROARING_IS_X64
 #endif
 
-#ifdef CROARING_DISABLE_X64
+#ifdef ROARING_DISABLE_X64
 #undef CROARING_IS_X64
 #endif
 // we include the intrinsic header
-#if !CROARING_REGULAR_VISUAL_STUDIO
+#ifndef _MSC_VER
 /* Non-Microsoft C/C++-compatible compiler */
 #include <x86intrin.h>  // on some recent GCC, this will declare posix_memalign
-
-
-
-#ifdef CROARING_CLANG_VISUAL_STUDIO
-
-/**
- * You are not supposed, normally, to include these
- * headers directly. Instead you should either include intrin.h
- * or x86intrin.h. However, when compiling with clang
- * under Windows (i.e., when _MSC_VER is set), these headers
- * only get included *if* the corresponding features are detected
- * from macros:
- * e.g., if __AVX2__ is set... in turn,  we normally set these
- * macros by compiling against the corresponding architecture
- * (e.g., arch:AVX2, -mavx2, etc.) which compiles the whole
- * software with these advanced instructions. These headers would
- * normally guard against such usage, but we carefully included
- * <x86intrin.h>  (or <intrin.h>) before, so the headers
- * are fooled.
- */
-#include <bmiintrin.h>   // for _blsr_u64
-#include <lzcntintrin.h> // for  __lzcnt64
-#include <immintrin.h>   // for most things (AVX2, AVX512, _popcnt64)
-#include <smmintrin.h>
-#include <tmmintrin.h>
-#include <avxintrin.h>
-#include <avx2intrin.h>
-#include <wmmintrin.h>
-// unfortunately, we may not get _blsr_u64, but, thankfully, clang
-// has it as a macro.
-#ifndef _blsr_u64
-// we roll our own
-#define _blsr_u64(n) ((n - 1) & n)
-#endif //  _blsr_u64
-#endif // SIMDJSON_CLANG_VISUAL_STUDIO
-
-
-#endif // CROARING_REGULAR_VISUAL_STUDIO
+#endif // _MSC_VER
 #endif // defined(__x86_64__) || defined(_M_X64)
 
 #if !defined(USENEON) && !defined(DISABLENEON) && defined(__ARM_NEON)
@@ -435,13 +373,14 @@ extern "C" {  // portability definitions are in global scope, not a namespace
 #  include <arm_neon.h>
 #endif
 
-#if !CROARING_REGULAR_VISUAL_STUDIO
+#ifndef _MSC_VER
 /* Non-Microsoft C/C++-compatible compiler, assumes that it supports inline
  * assembly */
-#define CROARING_INLINE_ASM 1
+#define ROARING_INLINE_ASM
 #endif  // _MSC_VER
 
-#if CROARING_REGULAR_VISUAL_STUDIO
+
+#ifdef _MSC_VER
 /* Microsoft C/C++-compatible compiler */
 #include <intrin.h>
 
@@ -503,16 +442,15 @@ inline int __builtin_clzll(unsigned long long input_num) {
 
 #endif
 
-#if CROARING_REGULAR_VISUAL_STUDIO
+#if defined(_MSC_VER)
 #define ALIGNED(x) __declspec(align(x))
-#elif defined(__GNUC__) || defined(__clang__)
-#define ALIGNED(x) __attribute__((aligned(x)))
 #else
-#warning "Warning. Unrecognized compiler."
-#define ALIGNED(x)
+#if defined(__GNUC__)
+#define ALIGNED(x) __attribute__((aligned(x)))
+#endif
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#ifdef __GNUC__
 #define WARN_UNUSED __attribute__((warn_unused_result))
 #else
 #define WARN_UNUSED
@@ -531,14 +469,14 @@ static inline int hammingbackup(uint64_t x) {
 }
 
 static inline int hamming(uint64_t x) {
-#if defined(_WIN64) && defined(CROARING_REGULAR_VISUAL_STUDIO) && CROARING_REGULAR_VISUAL_STUDIO
+#if defined(_WIN64) && defined(_MSC_VER) && !defined(__clang__)
 #ifdef _M_ARM64
   return hammingbackup(x);
   // (int) _CountOneBits64(x); is unavailable
 #else  // _M_ARM64
   return (int) __popcnt64(x);
 #endif // _M_ARM64
-#elif defined(_WIN32) && defined(CROARING_REGULAR_VISUAL_STUDIO) && CROARING_REGULAR_VISUAL_STUDIO
+#elif defined(_WIN32) && defined(_MSC_VER) && !defined(__clang__)
 #ifdef _M_ARM
   return hammingbackup(x);
   // _CountOneBits is unavailable
@@ -734,10 +672,10 @@ typedef ROARING_CONTAINER_T container_t;
  * downcast; only a static_cast<> is needed.  Define a macro for static casting
  * which helps make casts more visible, and catches problems at compile-time
  * when building the C sources in C++ mode:
- *
+ * 
  *     void some_func(container_t **c, ...) {  // double pointer, not single
  *         array_container_t *ac1 = (array_container_t *)(c);  // uncaught!!
- *
+ * 
  *         array_container_t *ac2 = CAST(array_container_t *, c)  // C++ errors
  *         array_container_t *ac3 = CAST_array(c);  // shorthand for #2, errors
  *     }
@@ -746,7 +684,7 @@ typedef ROARING_CONTAINER_T container_t;
  * needs a reinterpret_cast<>, which sacrifices safety...so a template is used
  * leveraging <type_traits> to make sure it's legal in the C++ build.
  */
-#ifdef __cplusplus
+#ifdef __cplusplus    
     #define CAST(type,value)            static_cast<type>(value)
     #define movable_CAST(type,value)    movable_CAST_HELPER<type>(value)
 
@@ -1035,7 +973,7 @@ bool memequals(const void *s1, const void *s2, size_t n);
 extern "C" { namespace roaring {
 #endif
 
-#if defined(CROARING_INLINE_ASM)
+#if defined(ROARING_INLINE_ASM)
 #define CROARING_ASMBITMANIPOPTIMIZATION  // optimization flag
 
 #define ASM_SHIFT_RIGHT(srcReg, bitsReg, destReg) \
@@ -2050,24 +1988,18 @@ void array_container_offset(const array_container_t *c,
 //* Check whether a range of values from range_start (included) to range_end (excluded) is present. */
 static inline bool array_container_contains_range(const array_container_t *arr,
                                                     uint32_t range_start, uint32_t range_end) {
-    const int32_t range_count = range_end - range_start;
+
     const uint16_t rs_included = range_start;
     const uint16_t re_included = range_end - 1;
 
-    // Empty range is always included
-    if (range_count <= 0) {
-        return true;
-    }
-    if (range_count > arr->cardinality) {
-        return false;
-    }
+    const uint16_t *carr = (const uint16_t *) arr->array;
 
-    const int32_t start = binarySearch(arr->array, arr->cardinality, rs_included);
-    // If this sorted array contains all items in the range:
-    // * the start item must be found
-    // * the last item in range range_count must exist, and be the expected end value
-    return (start >= 0) && (arr->cardinality >= start + range_count) &&
-           (arr->array[start + range_count - 1] == re_included);
+    const int32_t start = advanceUntil(carr, -1, arr->cardinality, rs_included);
+    const int32_t end = advanceUntil(carr, start - 1, arr->cardinality, re_included);
+
+    return (start < arr->cardinality) && (end < arr->cardinality)
+            && (((uint16_t)(end - start)) == re_included - rs_included)
+            && (carr[start] == rs_included) && (carr[end] == re_included);
 }
 
 /* Returns the smallest value (assumes not empty) */
@@ -6784,9 +6716,7 @@ inline container_t *ra_get_container_at_index(
 /**
  * Retrieves the key at index i
  */
-inline uint16_t ra_get_key_at_index(const roaring_array_t *ra, uint16_t i) {
-    return ra->keys[i];
-}
+uint16_t ra_get_key_at_index(const roaring_array_t *ra, uint16_t i);
 
 /**
  * Add a new key-value pair at index i
@@ -7016,7 +6946,7 @@ extern "C" { namespace roaring { namespace misc {
 // useful for basic info (0)
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
                                 unsigned int *ecx, unsigned int *edx) {
-#ifdef CROARING_INLINE_ASM
+#ifdef ROARING_INLINE_ASM
     __asm volatile("cpuid"
                    : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
                    : "0"(*eax), "2"(*ecx));
@@ -7028,7 +6958,7 @@ static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
 // The EAX register should be loaded with a value specifying what information to
 // return
 static inline void cpuinfo(int code, int *eax, int *ebx, int *ecx, int *edx) {
-#ifdef CROARING_INLINE_ASM
+#ifdef ROARING_INLINE_ASM
     __asm__ volatile("cpuid;"  //  call cpuid instruction
                      : "=a"(*eax), "=b"(*ebx), "=c"(*ecx),
                        "=d"(*edx)  // output equal to "movl  %%eax %1"
@@ -9118,9 +9048,8 @@ static inline bool _avx2_memequals(const void *s1, const void *s2, size_t n) {
     }
 
     while (ptr1 < end8) {
-        uint64_t v1, v2;
-        memcpy(&v1,ptr1,sizeof(uint64_t));
-        memcpy(&v2,ptr2,sizeof(uint64_t));
+        uint64_t v1 = *((const uint64_t*)ptr1);
+        uint64_t v2 = *((const uint64_t*)ptr2);
         if (v1 != v2) {
             return false;
         }
@@ -11975,11 +11904,10 @@ container_t *convert_to_bitset_or_array_container(
         for (int rlepos = 0; rlepos < rc->n_runs; ++rlepos) {
             uint16_t run_start = rc->runs[rlepos].value;
             uint16_t run_end = run_start + rc->runs[rlepos].length;
-            for (uint16_t run_value = run_start; run_value < run_end;
+            for (uint16_t run_value = run_start; run_value <= run_end;
                  ++run_value) {
                 answer->array[answer->cardinality++] = run_value;
             }
-            answer->array[answer->cardinality++] = run_end;
         }
         assert(card == answer->cardinality);
         *resulttype = ARRAY_CONTAINER_TYPE;
@@ -15418,91 +15346,46 @@ bool roaring_bitmap_init_with_capacity(roaring_bitmap_t *r, uint32_t cap) {
     return ra_init_with_capacity(&r->high_low_container, cap);
 }
 
-static inline void add_bulk_impl(roaring_bitmap_t *r,
-                                 roaring_bulk_context_t *context,
-                                 uint32_t val) {
-    uint16_t key = val >> 16;
-    if (context->container == NULL || context->key != key) {
-        uint8_t typecode;
-        int idx;
-        context->container = containerptr_roaring_bitmap_add(
-            r, val, &typecode, &idx);
-        context->typecode = typecode;
-        context->idx = idx;
-        context->key = key;
-    } else {
-        // no need to seek the container, it is at hand
-        // because we already have the container at hand, we can do the
-        // insertion directly, bypassing the roaring_bitmap_add call
-        uint8_t new_typecode;
-        container_t *container2 = container_add(
-            context->container, val & 0xFFFF, context->typecode, &new_typecode);
-        if (container2 != context->container) {
-            // rare instance when we need to change the container type
-            container_free(context->container, context->typecode);
-            ra_set_container_at_index(&r->high_low_container, context->idx,
-                                      container2, new_typecode);
-            context->typecode = new_typecode;
-            context->container = container2;
-        }
-    }
-}
 
 void roaring_bitmap_add_many(roaring_bitmap_t *r, size_t n_args,
                              const uint32_t *vals) {
+    container_t *container = NULL;  // hold value of last container touched
+    uint8_t typecode = 0;    // typecode of last container touched
+    uint32_t prev = 0;       // previous valued inserted
+    size_t i = 0;            // index of value
+    int containerindex = 0;
+    if (n_args == 0) return;
     uint32_t val;
-    const uint32_t *start = vals;
-    const uint32_t *end = vals + n_args;
-    const uint32_t *current_val = start;
-
-    if (n_args == 0) {
-        return;
-    }
-
-    uint8_t typecode;
-    int idx;
-    container_t *container;
-    val = *current_val;
-    container = containerptr_roaring_bitmap_add(r, val, &typecode, &idx);
-    roaring_bulk_context_t context = {container, idx, (uint16_t)(val >> 16), typecode};
-
-    for (; current_val != end; current_val++) {
-        memcpy(&val, current_val, sizeof(val));
-        add_bulk_impl(r, &context, val);
-    }
-}
-
-void roaring_bitmap_add_bulk(roaring_bitmap_t *r,
-                             roaring_bulk_context_t *context, uint32_t val) {
-    add_bulk_impl(r, context, val);
-}
-
-bool roaring_bitmap_contains_bulk(const roaring_bitmap_t *r,
-                                  roaring_bulk_context_t *context,
-                                  uint32_t val)
-{
-    uint16_t key = val >> 16;
-    if (context->container == NULL || context->key != key) {
-        int32_t start_idx = -1;
-        if (context->container != NULL && context->key < key) {
-            start_idx = context->idx;
+    memcpy(&val, vals + i, sizeof(val));
+    container =
+        containerptr_roaring_bitmap_add(r, val, &typecode, &containerindex);
+    prev = val;
+    i++;
+    for (; i < n_args; i++) {
+        memcpy(&val, vals + i, sizeof(val));
+        if (((prev ^ val) >> 16) ==
+            0) {  // no need to seek the container, it is at hand
+            // because we already have the container at hand, we can do the
+            // insertion
+            // automatically, bypassing the roaring_bitmap_add call
+            uint8_t newtypecode = typecode;
+            container_t *container2 =
+                container_add(container, val & 0xFFFF, typecode, &newtypecode);
+            if (container2 != container) {  // rare instance when we need to
+                                            // change the container type
+                container_free(container, typecode);
+                ra_set_container_at_index(&r->high_low_container,
+                                          containerindex, container2,
+                                          newtypecode);
+                typecode = newtypecode;
+                container = container2;
+            }
+        } else {
+            container = containerptr_roaring_bitmap_add(r, val, &typecode,
+                                                        &containerindex);
         }
-        int idx = ra_advance_until(&r->high_low_container, key, start_idx);
-        if (idx == ra_get_size(&r->high_low_container)) {
-            return false;
-        }
-        uint8_t typecode;
-        context->container = ra_get_container_at_index(&r->high_low_container, idx, &typecode);
-        context->typecode = typecode;
-        context->idx = idx;
-        context->key = ra_get_key_at_index(&r->high_low_container, idx);
-        // ra_advance_until finds the next key >= the target, we found a later container.
-        if (context->key != key) {
-            return false;
-        }
+        prev = val;
     }
-    // context is now set up
-    return container_contains(context->container, val & 0xFFFF, context->typecode);
 }
 
 roaring_bitmap_t *roaring_bitmap_of_ptr(size_t n_args, const uint32_t *vals) {
@@ -15515,12 +15398,11 @@ roaring_bitmap_t *roaring_bitmap_of(size_t n_args, ...) {
     // todo: could be greatly optimized but we do not expect this call to ever
     // include long lists
     roaring_bitmap_t *answer = roaring_bitmap_create();
-    roaring_bulk_context_t context = {0};
     va_list ap;
     va_start(ap, n_args);
-    for (size_t i = 0; i < n_args; i++) {
+    for (size_t i = 1; i <= n_args; i++) {
         uint32_t val = va_arg(ap, uint32_t);
-        roaring_bitmap_add_bulk(answer, &context, val);
+        roaring_bitmap_add(answer, val);
     }
     va_end(ap);
     return answer;
@@ -16790,24 +16672,14 @@ size_t roaring_bitmap_portable_serialize(const roaring_bitmap_t *r,
 
 roaring_bitmap_t *roaring_bitmap_deserialize(const void *buf) {
     const char *bufaschar = (const char *)buf;
-    if (bufaschar[0] == CROARING_SERIALIZATION_ARRAY_UINT32) {
+    if (*(const unsigned char *)buf == CROARING_SERIALIZATION_ARRAY_UINT32) {
         /* This looks like a compressed set of uint32_t elements */
         uint32_t card;
         memcpy(&card, bufaschar + 1, sizeof(uint32_t));
         const uint32_t *elems =
             (const uint32_t *)(bufaschar + 1 + sizeof(uint32_t));
-        roaring_bitmap_t *bitmap = roaring_bitmap_create();
-        if (bitmap == NULL) {
-            return NULL;
-        }
-        roaring_bulk_context_t context = {0};
-        for (uint32_t i = 0; i < card; i++) {
-            // elems may not be aligned, read with memcpy
-            uint32_t elem;
-            memcpy(&elem, elems + i, sizeof(elem));
-            roaring_bitmap_add_bulk(bitmap, &context, elem);
-        }
-        return bitmap;
+
+        return roaring_bitmap_of_ptr(card, elems);
     } else if (bufaschar[0] == CROARING_SERIALIZATION_CONTAINER) {
         return roaring_bitmap_portable_deserialize(bufaschar + 1);
     } else
@@ -18848,8 +18720,30 @@ extern inline container_t *ra_get_container_at_index(
     const roaring_array_t *ra, uint16_t i,
     uint8_t *typecode);
 
-extern inline uint16_t ra_get_key_at_index(const roaring_array_t *ra,
-                                           uint16_t i);
+#ifdef ROARING_NOT_USED
+container_t *ra_get_writable_container(
+    roaring_array_t *ra, uint16_t x,
+    uint8_t *typecode
+){
+    int i = binarySearch(ra->keys, (int32_t)ra->size, x);
+    if (i < 0) return NULL;
+    *typecode = ra->typecodes[i];
+    return get_writable_copy_if_shared(ra->containers[i], typecode);
+}
+
+container_t *ra_get_writable_container_at_index(
+    roaring_array_t *ra, uint16_t i,
+    uint8_t *typecode
+){
+    assert(i < ra->size);
+    *typecode = ra->typecodes[i];
+    return get_writable_copy_if_shared(ra->containers[i], typecode);
+}
+#endif
+
+uint16_t ra_get_key_at_index(const roaring_array_t *ra, uint16_t i) {
+    return ra->keys[i];
+}
 
 extern inline int32_t ra_get_index(const roaring_array_t *ra, uint16_t x);
 
