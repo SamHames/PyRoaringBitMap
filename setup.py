@@ -31,10 +31,6 @@ except (IOError, ImportError, RuntimeError):
     long_description = ''
 
 
-print('Building pyroaring from C sources.')
-ext = 'cpp'
-
-
 if PLATFORM_WINDOWS:
     compile_args = []
 else:
@@ -58,15 +54,37 @@ else:
     #else:
     #    compile_args.append('-march=native')
 
-filename = os.path.join(PKG_DIR, 'pyroaring.%s' % ext)
-pyroaring = Extension('pyroaring',
-                      sources=[filename, os.path.join(PKG_DIR, 'roaring.c')],
-                      extra_compile_args=compile_args,
-                      )
+pyroaring_modules = [Extension(
+    'pyroaring',
+    sources=[os.path.join(PKG_DIR, 'pyroaring.cpp'), os.path.join(PKG_DIR, 'roaring.c')],
+    extra_compile_args=compile_args,
+)]
+
+# Test if Cython is installed, attempt to use cythonize to build the module.
+# If this fails, fallback to the included pre-cythonised files.
+try:
+    from Cython.Build import cythonize
+    pyroaring_modules = cythonize(
+        [
+            Extension(
+            'pyroaring',
+            sources=[os.path.join(PKG_DIR, 'pyroaring.pyx'), os.path.join(PKG_DIR, 'roaring.c')],
+            extra_compile_args=compile_args,
+            ),
+        ],
+        compiler_directives={'binding': True}
+    )
+    print("Building from Cython sources")
+except Exception:
+    # Always fallback to trying a plain compile, unless explicitly
+    # specified to only use Cython.
+    if 'PYROARING_USE_CYTHON' in os.environ:
+        raise
+    print("Building from precompiled sources")
 
 setup(
     name='pyroaring',
-    ext_modules=[pyroaring],
+    ext_modules=pyroaring_modules,
     version=VERSION,
     description='Fast and lightweight set for unsigned 32 bits integers.',
     long_description=long_description,
