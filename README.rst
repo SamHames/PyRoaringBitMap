@@ -64,68 +64,84 @@ Conda users can install the package from `conda-forge`:
 
 (Supports Python 3.6 or higher; Mac/Linux/Windows)
 
-Manual compilation / installation
+Installation from Source
 ---------------------------------
 
 If you want to compile (and install) pyroaring by yourself, for instance
-to modify the Cython sources or because you do not have ``pip``, follow
-these steps.
+to modify the Cython sources you can follow the following instructions.
+Note that these examples will install in your currently active python
+virtual environment.
 
-Note that the Python package ``Cython`` is required. You may install it as:
-
-.. code:: bash
-
-    pip install --upgrade setuptools -user
-    pip install cython --user
-
-Clone this repository.
+First clone this repository.
 
 .. code:: bash
 
     git clone https://github.com/Ezibenroc/PyRoaringBitMap.git
-    cd PyRoaringBitMap
-    git submodule init && git submodule update
 
-Build pyroaring locally, e.g. to test a new feature you made.
+To install from the pre-cythonised sources (no cython required), the source
+checkout can be installed directly using pip:
+
+.. code:: bash
+
+    python -m pip install .
+
+This will require an appropriate build environment on your system, including
+access to a C compiler and Python headers.
+
+To install via cythonising the source, for example during development
+or if the prebuilt sources don't build for your system:
+
+.. code:: bash
+
+    python -m pip install --upgrade cython --upgrade setuptools
+
+    # This will fallback to C sources if Cython fails to configure
+    python -m pip install .
+
+    # This will only try to use Cython, with no fallback to bundled sources
+    PYROARING_USE_CYTHON=1 python -m pip install .
+
+Setting the environment variable `PYROARING_USE_CYTHON` will always ensure
+that Cython source is used for installation. Note that unlike an editable
+install of a pure python library, your source won't automatically recompile
+on every change.
+
+If you just want to recompile the package in place for quick testing you can
+try:
 
 .. code:: bash
 
     python setup.py build_ext -i
 
-On macOS this may fail with errors because setuptools adds ``-arch x86_64 -arch i386`` to the compiler command, which may conflict with the ``-march=native`` flag. You can overwrite this behavior by setting the ARCHFLAGS flag:
+
+Then you can test the new code using tox - this will install all the other
+dependencies needed for testing and test in an isolated environment:
 
 .. code:: bash
 
-    ARCHFLAGS="" python setup.py build_ext -i
+    python -m pip install tox
+    # This will test in three ways: via installation from source,
+    # via cython directly, and creation of a wheel
+    tox
 
-Then you can test the new code:
-
-
-.. code:: bash
-
-    pip install hypothesis --user
-    python test.py # run the tests, optional but recommended
-
-
-
-Install pyroaring (use this if you do not have ``pip``).
+If you just want to run the tests directly from the root of the repository:
 
 .. code:: bash
 
-    python setup.py install # may require superuser rights, add option --user if you wish to install it on your local account
+    python -m pip install hypothesis
+    # This will test in three ways: via installation from source,
+    # via cython directly, and creation of a wheel
+    python test.py
 
-Package pyroaring.
+
+Package pyroaring as an sdist and wheel. Note that building wheels that have
+wide compatibility can be tricky - for releases we rely on `cibuildwheel <https://cibuildwheel.readthedocs.io/en/stable/>`_
+to do the heavy lifting across platforms.
 
 .. code:: bash
 
-    python setup.py sdist
-    pip install dist/pyroaring-0.1.?.tar.gz # optionnal, to install the package
-
-Build a wheel.
-
-.. code:: bash
-
-    python setup.py bdist_wheel
+    python -m pip install build
+    python -m build .
 
 For all the above commands, two environment variables can be used to control the compilation.
 
@@ -155,6 +171,41 @@ Be mindful that when doing so, the generated binary may only run on your machine
     ARCHI=native pip install pyroaring  --no-binary :all:
 
 This approach may not work under macOS.
+
+
+Development Notes
+-----------------
+
+Updating CRoaring
+=================
+
+The download_amalgamation.py script can be used to download a specific version
+of the official CRoaring amalgamation:
+
+.. code:: bash
+
+    python download_amalgamation.py v0.7.2
+
+This will update roaring.c and roaring.h. This also means that the dependency
+is vendored in and tracked as part of the source repository now. Note that the
+__croaring_version__ in version.pxi will need to be updated to match the new
+version.
+
+
+Running Cython to generate source
+=================================
+
+To generate the cythonised source for inclusion in the package:
+
+.. code:: bash
+
+    python -m pip install --upgrade cython
+    cython pyroaring.pyx -3 --cplus
+
+This will update the file pyroaring.cpp in the pyroaring folder. This is only
+essential before a release, to ensure that we can distribute a version of
+the package that doesn't rely on Cython being present to build.
+
 
 Benchmark
 ---------
