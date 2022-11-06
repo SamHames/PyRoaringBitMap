@@ -2578,7 +2578,7 @@ static const char __pyx_k_rstrip[] = "rstrip";
 static const char __pyx_k_struct[] = "struct";
 static const char __pyx_k_unpack[] = "unpack";
 static const char __pyx_k_update[] = "update";
-static const char __pyx_k_v0_6_0[] = "v0.6.0";
+static const char __pyx_k_v0_7_2[] = "v0.7.2";
 static const char __pyx_k_values[] = "values";
 static const char __pyx_k_xrange[] = "xrange";
 static const char __pyx_k_fortran[] = "fortran";
@@ -2594,7 +2594,6 @@ static const char __pyx_k_optimize[] = "optimize";
 static const char __pyx_k_pyx_type[] = "__pyx_type";
 static const char __pyx_k_setstate[] = "__setstate__";
 static const char __pyx_k_to_array[] = "to_array";
-static const char __pyx_k_0_3_4dev1[] = "0.3.4dev1";
 static const char __pyx_k_NameError[] = "NameError";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_add_range[] = "add_range";
@@ -2607,6 +2606,7 @@ static const char __pyx_k_range_end[] = "range_end";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_serialize[] = "serialize";
 static const char __pyx_k_sum_value[] = "sum_value";
+static const char __pyx_k_0_3_4_dev1[] = "0.3.4.dev1";
 static const char __pyx_k_IndexError[] = "IndexError";
 static const char __pyx_k_ValueError[] = "ValueError";
 static const char __pyx_k_is_integer[] = "is_integer";
@@ -2773,7 +2773,7 @@ static const char __pyx_k_Return_the_number_of_elements_i_4[] = "\n        Retur
 static const char __pyx_k_AbstractBitMap_iter_equal_or_lar_2[] = "AbstractBitMap.iter_equal_or_larger (line 204)";
 static const char __pyx_k_AbstractBitMap_symmetric_differe_2[] = "AbstractBitMap.symmetric_difference_cardinality (line 511)";
 static const char __pyx_k_Empty_roaring_bitmap_there_is_no_2[] = "Empty roaring bitmap, there is no maximum.";
-static PyObject *__pyx_kp_u_0_3_4dev1;
+static PyObject *__pyx_kp_u_0_3_4_dev1;
 static PyObject *__pyx_n_s_ASCII;
 static PyObject *__pyx_n_s_AbstractBitMap;
 static PyObject *__pyx_kp_u_AbstractBitMap___init___line_71;
@@ -3022,7 +3022,7 @@ static PyObject *__pyx_kp_s_unable_to_allocate_shape_and_str;
 static PyObject *__pyx_n_s_union;
 static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
-static PyObject *__pyx_kp_u_v0_6_0;
+static PyObject *__pyx_kp_u_v0_7_2;
 static PyObject *__pyx_n_s_values;
 static PyObject *__pyx_n_s_version;
 static PyObject *__pyx_n_s_xor;
@@ -31063,7 +31063,7 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_kp_u_0_3_4dev1, __pyx_k_0_3_4dev1, sizeof(__pyx_k_0_3_4dev1), 0, 1, 0, 0},
+  {&__pyx_kp_u_0_3_4_dev1, __pyx_k_0_3_4_dev1, sizeof(__pyx_k_0_3_4_dev1), 0, 1, 0, 0},
   {&__pyx_n_s_ASCII, __pyx_k_ASCII, sizeof(__pyx_k_ASCII), 0, 0, 1, 1},
   {&__pyx_n_s_AbstractBitMap, __pyx_k_AbstractBitMap, sizeof(__pyx_k_AbstractBitMap), 0, 0, 1, 1},
   {&__pyx_kp_u_AbstractBitMap___init___line_71, __pyx_k_AbstractBitMap___init___line_71, sizeof(__pyx_k_AbstractBitMap___init___line_71), 0, 1, 0, 0},
@@ -31312,7 +31312,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_union, __pyx_k_union, sizeof(__pyx_k_union), 0, 0, 1, 1},
   {&__pyx_n_s_unpack, __pyx_k_unpack, sizeof(__pyx_k_unpack), 0, 0, 1, 1},
   {&__pyx_n_s_update, __pyx_k_update, sizeof(__pyx_k_update), 0, 0, 1, 1},
-  {&__pyx_kp_u_v0_6_0, __pyx_k_v0_6_0, sizeof(__pyx_k_v0_6_0), 0, 1, 0, 0},
+  {&__pyx_kp_u_v0_7_2, __pyx_k_v0_7_2, sizeof(__pyx_k_v0_7_2), 0, 1, 0, 0},
   {&__pyx_n_s_values, __pyx_k_values, sizeof(__pyx_k_values), 0, 0, 1, 1},
   {&__pyx_n_s_version, __pyx_k_version, sizeof(__pyx_k_version), 0, 0, 1, 1},
   {&__pyx_n_s_xor, __pyx_k_xor, sizeof(__pyx_k_xor), 0, 0, 1, 1},
@@ -32280,16 +32280,16 @@ if (!__Pyx_RefNanny) {
   #endif
 
   /* "pyroaring/version.pxi":1
- * __version__ = "0.3.4dev1"             # <<<<<<<<<<<<<<
- * __croaring_version__ = "v0.6.0"
+ * __version__ = "0.3.4.dev1"             # <<<<<<<<<<<<<<
+ * __croaring_version__ = "v0.7.2"
  */
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_version, __pyx_kp_u_0_3_4dev1) < 0) __PYX_ERR(9, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_version, __pyx_kp_u_0_3_4_dev1) < 0) __PYX_ERR(9, 1, __pyx_L1_error)
 
   /* "pyroaring/version.pxi":2
- * __version__ = "0.3.4dev1"
- * __croaring_version__ = "v0.6.0"             # <<<<<<<<<<<<<<
+ * __version__ = "0.3.4.dev1"
+ * __croaring_version__ = "v0.7.2"             # <<<<<<<<<<<<<<
  */
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_croaring_version, __pyx_kp_u_v0_6_0) < 0) __PYX_ERR(9, 2, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_croaring_version, __pyx_kp_u_v0_7_2) < 0) __PYX_ERR(9, 2, __pyx_L1_error)
 
   /* "pyroaring/abstract_bitmap.pxi":8
  * 
