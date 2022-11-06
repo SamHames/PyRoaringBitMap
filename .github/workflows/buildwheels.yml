@@ -15,10 +15,7 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.11.2
-        env:
-          CIBW_TEST_COMMAND: >
-            python {project}/test.py &&
-            python -c "import cydoctest, pyroaring; cydoctest.testmod(pyroaring)" -v
+        # env:
         #   CIBW_SOME_OPTION: value
         #    ...
         # with:

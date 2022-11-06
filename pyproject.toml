@@ -1,0 +1,3 @@
+[tool.cibuildwheel]
+test-requires = "hypothesis"
+test-command =  "python {project}/test.py && python {project}/cydoctest.py"
