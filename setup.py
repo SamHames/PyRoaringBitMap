@@ -74,15 +74,17 @@ setup(
     author='Tom Cornebize',
     author_email='tom.cornebize@gmail.com',
     license='MIT',
+    python_requires='>3.7.0',
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
 )
