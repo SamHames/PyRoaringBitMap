@@ -65,7 +65,8 @@ jobs:
         if: "!contains(github.ref, 'dev')"
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
 
       - uses: pypa/gh-action-pypi-publish@v1.5.0
         # Deploy tags containing 'dev' to test pypi.
