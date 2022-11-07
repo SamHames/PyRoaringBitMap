@@ -83,7 +83,7 @@ except Exception:
     print("Building from precompiled sources")
 
 setup(
-    name='pyroaring',
+    name='pyroaring_pypi_test',
     ext_modules=pyroaring_modules,
     version=VERSION,
     description='Fast and lightweight set for unsigned 32 bits integers.',
