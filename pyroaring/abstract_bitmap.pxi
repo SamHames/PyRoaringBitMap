@@ -12,10 +12,15 @@ try:
 except NameError: # python 3
     pass
 
-cdef croaring.roaring_bitmap_t *deserialize_ptr(char *buff):
+cdef croaring.roaring_bitmap_t *deserialize_ptr(char *buff) except *:
     cdef croaring.roaring_bitmap_t *ptr
     ptr = croaring.roaring_bitmap_portable_deserialize(buff)
+
+    if ptr is NULL:
+        raise ValueError("Cannot deserialize given data.")
+
     return ptr
+
 
 cdef class AbstractBitMap:
     """
