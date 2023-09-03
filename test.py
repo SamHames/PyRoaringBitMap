@@ -653,6 +653,11 @@ class SerializationTest(Util):
         self.assertEqual(old_bm, new_bm)
         self.assert_is_not(old_bm, new_bm)
 
+    @given(bitmap_cls)
+    def test_deserializing_invalid_data(self, cls):
+        with self.assertRaises(ValueError):
+            cls.deserialize(b'obviously not a roaringbitmap')
+
 
 class StatisticsTest(Util):
 
