@@ -36,14 +36,14 @@ except (IOError, ImportError, RuntimeError):
     long_description = ''
 
 
-if PLATFORM_WINDOWS:
-    compile_args = []
-else:
+compile_args = ['-std=c++17']
+
+if not PLATFORM_WINDOWS:
+
     compile_args = ['-D__STDC_LIMIT_MACROS', '-D__STDC_CONSTANT_MACROS', '-D _GLIBCXX_ASSERTIONS']
     if PLATFORM_MACOSX:
         compile_args.append('-mmacosx-version-min=10.14')
-    else:
-        compile_args.append('-std=c99')
+
     if 'DEBUG' in os.environ:
         compile_args.extend(['-O0', '-g'])
     else:
