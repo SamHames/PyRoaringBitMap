@@ -71,41 +71,35 @@ hyp_many_collections = st.lists(hyp_collection, min_size=1, max_size=20)
 
 bitmap_cls = st.sampled_from([BitMap, FrozenBitMap])
 
-set_operators = st.sampled_from(
-    [
-        operator.or_,
-        operator.and_,
-        operator.xor,
-        operator.sub
-    ]
-)
+set_operators = [
+    operator.or_,
+    operator.and_,
+    operator.xor,
+    operator.sub
+]
 
-inplace_set_operators = st.sampled_from(
-    [
-        operator.ior,
-        operator.iand,
-        operator.ixor,
-        operator.isub
-    ]
-)
 
-comparison_operators = st.sampled_from(
-    [
-        operator.le,
-        operator.ge,
-        operator.gt,
-        operator.lt
-    ]
-)
+inplace_set_operators = [
+    operator.ior,
+    operator.iand,
+    operator.ixor,
+    operator.isub
+]
 
-cardinality_operators = st.sampled_from(
-    [
-        (operator.or_, 'union_cardinality'),
-        (operator.and_, 'intersection_cardinality'),
-        (operator.sub, 'difference_cardinality'),
-        (operator.xor, 'symmetric_difference_cardinality'),
-    ]
-)
+comparison_operators = [
+    operator.le,
+    operator.ge,
+    operator.gt,
+    operator.lt
+]
+
+cardinality_operators = [
+    (operator.or_, 'union_cardinality'),
+    (operator.and_, 'intersection_cardinality'),
+    (operator.sub, 'difference_cardinality'),
+    (operator.xor, 'symmetric_difference_cardinality'),
+]
+
 
 
 class Util(unittest.TestCase):
@@ -371,70 +365,74 @@ class SelectRankTest(Util):
 
 class BinaryOperationsTest(Util):
 
-    @given(set_operators, bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
-    def test_binary_op(self, op, cls1, cls2,  values1, values2, cow):
-        self.set1 = set(values1)
-        self.set2 = set(values2)
-        self.bitmap1 = cls1(values1, cow)
-        self.bitmap2 = cls2(values2, cow)
-        old_bitmap1 = cls1(self.bitmap1)
-        old_bitmap2 = cls2(self.bitmap2)
-        result_set = op(self.set1, self.set2)
-        result_bitmap = op(self.bitmap1, self.bitmap2)
-        self.assertEqual(self.bitmap1, old_bitmap1)
-        self.assertEqual(self.bitmap2, old_bitmap2)
-        self.compare_with_set(result_bitmap, result_set)
-        self.assertEqual(type(self.bitmap1), type(result_bitmap))
+    @given(bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
+    def test_binary_op(self, cls1, cls2,  values1, values2, cow):
+        for op in set_operators:
+            self.set1 = set(values1)
+            self.set2 = set(values2)
+            self.bitmap1 = cls1(values1, cow)
+            self.bitmap2 = cls2(values2, cow)
+            old_bitmap1 = cls1(self.bitmap1)
+            old_bitmap2 = cls2(self.bitmap2)
+            result_set = op(self.set1, self.set2)
+            result_bitmap = op(self.bitmap1, self.bitmap2)
+            self.assertEqual(self.bitmap1, old_bitmap1)
+            self.assertEqual(self.bitmap2, old_bitmap2)
+            self.compare_with_set(result_bitmap, result_set)
+            self.assertEqual(type(self.bitmap1), type(result_bitmap))
 
-    @given(inplace_set_operators, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
-    def test_binary_op_inplace(self, op, cls2, values1, values2, cow):
-        self.set1 = set(values1)
-        self.set2 = set(values2)
-        self.bitmap1 = BitMap(values1, cow)
-        original = self.bitmap1
-        self.bitmap2 = cls2(values2, cow)
-        old_bitmap2 = cls2(self.bitmap2)
-        op(self.set1, self.set2)
-        op(self.bitmap1, self.bitmap2)
-        self.assertIs(original, self.bitmap1)
-        self.assertEqual(self.bitmap2, old_bitmap2)
-        self.compare_with_set(self.bitmap1, self.set1)
+    @given(bitmap_cls, hyp_collection, hyp_collection, st.booleans())
+    def test_binary_op_inplace(self, cls2, values1, values2, cow):
+        for op in inplace_set_operators:
+            self.set1 = set(values1)
+            self.set2 = set(values2)
+            self.bitmap1 = BitMap(values1, cow)
+            original = self.bitmap1
+            self.bitmap2 = cls2(values2, cow)
+            old_bitmap2 = cls2(self.bitmap2)
+            op(self.set1, self.set2)
+            op(self.bitmap1, self.bitmap2)
+            self.assertIs(original, self.bitmap1)
+            self.assertEqual(self.bitmap2, old_bitmap2)
+            self.compare_with_set(self.bitmap1, self.set1)
 
-    @given(inplace_set_operators, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
-    def test_binary_op_inplace_frozen(self, op, cls2, values1, values2, cow):
-        self.set1 = frozenset(values1)
-        self.set2 = frozenset(values2)
+    @given(bitmap_cls, hyp_collection, hyp_collection, st.booleans())
+    def test_binary_op_inplace_frozen(self, cls2, values1, values2, cow):
+        for op in [operator.or_, operator.and_, operator.xor, operator.sub]:
+            self.set1 = frozenset(values1)
+            self.set2 = frozenset(values2)
 
-        self.bitmap1 = FrozenBitMap(values1, cow)
-        old_bitmap1 = FrozenBitMap(self.bitmap1)
-        self.bitmap2 = cls2(values2, cow)
-        old_bitmap2 = cls2(self.bitmap2)
+            self.bitmap1 = FrozenBitMap(values1, cow)
+            old_bitmap1 = FrozenBitMap(self.bitmap1)
+            self.bitmap2 = cls2(values2, cow)
+            old_bitmap2 = cls2(self.bitmap2)
 
-        new_set = op(self.set1, self.set2)
-        new_bitmap = op(self.bitmap1, self.bitmap2)
+            new_set = op(self.set1, self.set2)
+            new_bitmap = op(self.bitmap1, self.bitmap2)
 
-        self.assertEqual(self.bitmap1, old_bitmap1)
-        self.assertEqual(self.bitmap2, old_bitmap2)
+            self.assertEqual(self.bitmap1, old_bitmap1)
+            self.assertEqual(self.bitmap2, old_bitmap2)
 
-        self.compare_with_set(new_bitmap, new_set)
+            self.compare_with_set(new_bitmap, new_set)
 
 
 class ComparisonTest(Util):
 
-    @given(comparison_operators, bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
-    def test_comparisons(self, op, cls1, cls2, values1, values2, cow):
-        self.set1 = set(values1)
-        self.set2 = set(values2)
-        self.bitmap1 = cls1(values1, copy_on_write=cow)
-        self.bitmap2 = cls2(values2, copy_on_write=cow)
-        self.assertEqual(op(self.bitmap1, self.bitmap1),
-                         op(self.set1, self.set1))
-        self.assertEqual(op(self.bitmap1, self.bitmap2),
-                         op(self.set1, self.set2))
-        self.assertEqual(op(self.bitmap1 | self.bitmap2, self.bitmap2),
-                         op(self.set1 | self.set2, self.set2))
-        self.assertEqual(op(self.set1, self.set1 | self.set2),
-                         op(self.set1, self.set1 | self.set2))
+    @given(bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
+    def test_comparisons(self, cls1, cls2, values1, values2, cow):
+        for op in comparison_operators:
+            self.set1 = set(values1)
+            self.set2 = set(values2)
+            self.bitmap1 = cls1(values1, copy_on_write=cow)
+            self.bitmap2 = cls2(values2, copy_on_write=cow)
+            self.assertEqual(op(self.bitmap1, self.bitmap1),
+                             op(self.set1, self.set1))
+            self.assertEqual(op(self.bitmap1, self.bitmap2),
+                             op(self.set1, self.set2))
+            self.assertEqual(op(self.bitmap1 | self.bitmap2, self.bitmap2),
+                             op(self.set1 | self.set2, self.set2))
+            self.assertEqual(op(self.set1, self.set1 | self.set2),
+                             op(self.set1, self.set1 | self.set2))
 
     @given(bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
     def test_intersect(self, cls1, cls2, values1, values2, cow):
@@ -508,15 +506,14 @@ class RangeTest(Util):
 
 class CardinalityTest(Util):
 
-    @given(cardinality_operators, bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
-    def test_cardinality(self, operator, cls1, cls2, values1, values2, cow):
-
-        op, method_name = operator
-        self.bitmap1 = cls1(values1, copy_on_write=cow)
-        self.bitmap2 = cls2(values2, copy_on_write=cow)
-        real_value = len(op(self.bitmap1, self.bitmap2))
-        estimated_value = getattr(self.bitmap1, method_name)(self.bitmap2)
-        self.assertEqual(real_value, estimated_value)
+    @given(bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
+    def test_cardinality(self, cls1, cls2, values1, values2, cow):
+        for op, method_name in cardinality_operators:
+            self.bitmap1 = cls1(values1, copy_on_write=cow)
+            self.bitmap2 = cls2(values2, copy_on_write=cow)
+            real_value = len(op(self.bitmap1, self.bitmap2))
+            estimated_value = getattr(self.bitmap1, method_name)(self.bitmap2)
+            self.assertEqual(real_value, estimated_value)
 
     @given(bitmap_cls, bitmap_cls, hyp_collection, hyp_collection, st.booleans())
     def test_jaccard_index(self, cls1, cls2, values1, values2, cow):
