@@ -92,10 +92,11 @@ To install from Cython via source, for example during development run the follow
 This will automatically install Cython if it not present for the build, cythonise the source files and compile everything for you.
 
 If you just want to recompile the package in place for quick testing you can
-try:
+try the following. Note that the build_clib compiles croaring, and only needs to be run
+when the version of croaring changes:
 
 .. code:: bash
-
+    python setup.py build_clib
     python setup.py build_ext -i
 
 Then you can test the new code using tox - this will install all the other
