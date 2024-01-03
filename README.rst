@@ -95,6 +95,7 @@ If you just want to recompile the package in place for quick testing you can
 try the following:
 
 .. code:: bash
+
     python setup.py build_clib
     python setup.py build_ext -i
 
