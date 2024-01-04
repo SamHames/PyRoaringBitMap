@@ -37,7 +37,12 @@ except (IOError, ImportError, RuntimeError):
 
 
 if PLATFORM_WINDOWS:
-    compile_args = []
+    pyroaring_module = Extension(
+        'pyroaring',
+        sources=[os.path.join(PKG_DIR, 'pyroaring.pyx'), os.path.join(PKG_DIR, 'roaring.c')],
+        language='c++'
+    )
+    libraries = None
 else:
     compile_args = ['-D__STDC_LIMIT_MACROS', '-D__STDC_CONSTANT_MACROS', '-D _GLIBCXX_ASSERTIONS']
     if PLATFORM_MACOSX:
@@ -57,27 +62,29 @@ else:
     #else:
     #    compile_args.append('-march=native')
 
-pyroaring_module = Extension(
-    'pyroaring',
-    sources=[os.path.join(PKG_DIR, 'pyroaring.pyx')],
-    extra_compile_args=compile_args + ["-std=c++11"],
-    language='c++'
-)
+    pyroaring_module = Extension(
+        'pyroaring',
+        sources=[os.path.join(PKG_DIR, 'pyroaring.pyx')],
+        extra_compile_args=compile_args + ["-std=c++11"],
+        language='c++'
+    )
 
-# Because we compile croaring with a c compiler with sometimes incompatible arguments,
-# define croaring compilation with an extra argument for the c11 standard, which is
-# required for atomic support.
-croaring = (
-    'croaring',
-    {
-        'sources': [os.path.join(PKG_DIR, 'roaring.c')],
-        "extra_compile_args": compile_args + ["-std=c11"]},
-)
+    # Because we compile croaring with a c compiler with sometimes incompatible arguments,
+    # define croaring compilation with an extra argument for the c11 standard, which is
+    # required for atomic support.
+    croaring = (
+        'croaring',
+        {
+            'sources': [os.path.join(PKG_DIR, 'roaring.c')],
+            "extra_compile_args": compile_args + ["-std=c11"]
+        },
+    )
+    libraries = [croaring]
 
 setup(
     name='pyroaring',
     ext_modules=[pyroaring_module],
-    libraries=[croaring],
+    libraries=libraries,
     version=VERSION,
     description='Fast and lightweight set for unsigned 32 bits integers.',
     long_description=long_description,
