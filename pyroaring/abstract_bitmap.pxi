@@ -81,12 +81,13 @@ cpdef ensure_frozen_aligned(const unsigned char[:] buff):
 
     # Find the starting point that is aligned in the overallocated buffer and use that
     # as the basis to start writing.
-    cdef size_t offset = <uintptr_t><const void *>aligned_buff % 64
+    cdef size_t mem_address = <uintptr_t>aligned_buff
+    cdef size_t offset = 64 - (mem_address % 64)
 
     memcpy(&aligned_buff[offset], <char*>&buff[0], size)
 
     cdef cvarray return_array = cvarray(
-        shape=(size + 64,), itemsize=sizeof(char), format="b", allocate_buffer=False
+        shape=(size + 64,), itemsize=sizeof(char), format="B", allocate_buffer=False
     )
 
     return_array.data = aligned_buff
@@ -838,9 +839,10 @@ cdef class AbstractBitMap:
         # An overallocated array - we won't return this directly but a memoryview slice.
         cdef char *buff = <char*>malloc(size + 32)
 
-        # Find the starting point that is aligned in the overallocated buffer and use that
-        # as the basis to start writing.
-        cdef size_t offset = <uintptr_t><const void *>buff % 32
+        # Find the starting point that is aligned in the overallocated buffer and use
+        # that as the basis to start writing.
+        cdef size_t mem_address = <uintptr_t>buff
+        cdef size_t offset = 32 - (mem_address % 32)
 
         croaring.roaring_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
@@ -1330,15 +1332,15 @@ cdef class AbstractBitMap64:
         you need to ensure the resulting memory is respects this alignment - this can
         be done using the function pyroaring.ensure_frozen_aligned.
 
-        See FrozenBitmap.deserialize_frozen_view for the reverse operation.
+        See FrozenBitmap64.deserialize_frozen_view for the reverse operation.
 
-        >>> frozen = BitMap([3, 12]).serialize_frozen_view()
-        >>> FrozenBitMap.deserialize_frozen_view(frozen)
-        FrozenBitMap([3, 12])
+        >>> frozen = BitMap64([3, 12]).serialize_frozen_view()
+        >>> FrozenBitMap64.deserialize_frozen_view(frozen)
+        FrozenBitMap64([3, 12])
 
         The format is not portable or stable, and can't be used with the standard
         deserialize method:
-        >>> FrozenBitMap.deserialize(frozen)
+        >>> FrozenBitMap64.deserialize(frozen)
         Traceback (most recent call last):
             ...
         ValueError: Could not deserialize bitmap
@@ -1353,20 +1355,23 @@ cdef class AbstractBitMap64:
         # An overallocated array - we won't return this directly but a memoryview slice.
         cdef char *buff = <char*>malloc(size + 64)
 
-        # Find the starting point that is aligned in the overallocated buffer and use that
-        # as the basis to start writing.
-        cdef size_t offset = <uintptr_t><const void *>buff % 64
+        # Find the starting point that is aligned in the overallocated buffer and use
+        # that as the basis to start writing.
+        cdef size_t mem_address = <uintptr_t>buff
+        cdef size_t offset = 64 - (mem_address % 64)
 
         croaring.roaring64_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
         cdef cvarray return_array = cvarray(
-            shape=(size+64,), itemsize=sizeof(char), format="B", allocate_buffer=False
+            shape=(size + 64,), itemsize=sizeof(char), format="B", allocate_buffer=False
         )
 
         return_array.data = buff
         return_array.callback_free_data = free
 
-        return return_array[offset: offset+size]
+        cdef char[:] arrayview = return_array
+
+        return arrayview[offset: offset+size]
 
     def serialize(self):
         """
