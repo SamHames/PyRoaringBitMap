@@ -97,11 +97,18 @@ cdef extern from "roaring.h":
     roaring_bitmap_t *roaring_bitmap_add_offset(const roaring_bitmap_t *bm, int64_t offset)
     bool roaring_bitmap_select(const roaring_bitmap_t *r, uint32_t rank, uint32_t *element)
     void roaring_bitmap_statistics(const roaring_bitmap_t *r, roaring_statistics_t *stat)
+
+    # Portable format de/serialization
     size_t roaring_bitmap_portable_size_in_bytes(const roaring_bitmap_t *ra)
     size_t roaring_bitmap_portable_serialize(const roaring_bitmap_t *ra, char *buf)
-    roaring_bitmap_t *roaring_bitmap_portable_deserialize(const char *buf)
     roaring_bitmap_t *roaring_bitmap_portable_deserialize_safe(const char *buf, size_t maxbytes)
     bool roaring_bitmap_internal_validate(const roaring_bitmap_t *r, const char **reason)
+
+    # Frozen format de/serialization
+    size_t roaring_bitmap_frozen_size_in_bytes(const roaring_bitmap_t *ra)
+    void roaring_bitmap_frozen_serialize(const roaring_bitmap_t *ra, char *buf)
+    const roaring_bitmap_t *roaring_bitmap_frozen_view(const char *buf, size_t maxbytes)
+
     roaring_uint32_iterator_t *roaring_iterator_create(const roaring_bitmap_t *ra)
     bool roaring_uint32_iterator_advance(roaring_uint32_iterator_t *it)
     uint32_t roaring_uint32_iterator_read(roaring_uint32_iterator_t *it, uint32_t* buf, uint32_t count)
