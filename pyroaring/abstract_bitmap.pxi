@@ -3,6 +3,9 @@ from libc.stdint cimport uint32_t, uint64_t, int64_t
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libc.stdlib cimport free, malloc
+from libc.string cimport memcpy
+
+from cython.view cimport array as cvarray
 
 from cpython cimport array
 import array
@@ -13,14 +16,16 @@ except NameError: # python 3
     pass
 
 
+cdef extern from "<stdlib.h>" nogil:
+    void *aligned_alloc(size_t alignment, size_t size)
+
+
 cdef croaring.roaring_bitmap_t *deserialize_ptr(const unsigned char[:] buff):
     cdef croaring.roaring_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
-    cdef char* buffer_ptr = <char*>&buff[0]
-
     buff_size = len(buff)
-    ptr = croaring.roaring_bitmap_portable_deserialize_safe(buffer_ptr, buff_size)
+    ptr = croaring.roaring_bitmap_portable_deserialize_safe(<char*>&buff[0], buff_size)
 
     if ptr == NULL:
       raise ValueError("Could not deserialize bitmap")
@@ -31,14 +36,13 @@ cdef croaring.roaring_bitmap_t *deserialize_ptr(const unsigned char[:] buff):
         raise ValueError(f"Invalid bitmap after deserialization: {reason_failure.decode('utf-8')}")
     return ptr
 
+
 cdef croaring.roaring64_bitmap_t *deserialize64_ptr(const unsigned char[:] buff):
     cdef croaring.roaring64_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
-    cdef char* buffer_ptr = <char*>&buff[0]
-
     buff_size = len(buff)
-    ptr = croaring.roaring64_bitmap_portable_deserialize_safe(buffer_ptr, buff_size)
+    ptr = croaring.roaring64_bitmap_portable_deserialize_safe(<char*>&buff[0], buff_size)
     if ptr == NULL:
       raise ValueError("Could not deserialize bitmap")
     # Validate the bitmap
@@ -47,6 +51,42 @@ cdef croaring.roaring64_bitmap_t *deserialize64_ptr(const unsigned char[:] buff)
         croaring.roaring64_bitmap_free(ptr)
         raise ValueError(f"Invalid bitmap after deserialization: {reason_failure.decode('utf-8')}")
     return ptr
+
+
+cpdef ensure_frozen_aligned(const unsigned char[:] buff):
+    """
+    Return a form of the input data that is guaranteed to be aligned for frozen views.
+
+    This will copy the input data. You should keep a reference to the resulting object
+    as long as you need to create FrozenBitMaps from it.
+
+    frozen supports the buffer protocol, so you can serialise the resulting bytes
+    >>> frozen = BitMap([1, 2, 3]).serialize_frozen_view()
+
+    Whatever IO you need on the result
+    >>> saved = bytes(frozen)
+
+    But you'll need to use this function to ensure the memory alignment before
+    deserializing.
+    >>> loaded = ensure_frozen_aligned(saved)
+    >>> FrozenBitMap.deserialize_frozen_view(loaded)
+    FrozenBitMap([1, 2, 3])
+
+    """
+
+    size = len(buff)
+    cdef char *aligned_buff = <char*>aligned_alloc(32, size)
+    memcpy(aligned_buff, <char*>&buff[0], size)
+
+    cdef cvarray return_array = cvarray(
+        shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+    )
+
+    return_array.data = aligned_buff
+    return_array.callback_free_data = free
+
+    return return_array
+
 
 def _string_rep(bm):
     skip_rows = len(bm) > 500 #this is the cutoff number for the truncating to kick in.
@@ -100,6 +140,9 @@ def _string_rep(bm):
 
     rows[-1] = rows[-1].rstrip(',')  # remove trailing comma from the last line
     return '\n'.join(rows) + tail
+
+# TODO: Probably want a helper for mmapping a set of frozen serialized views that are
+# aligned?... mmap(*bms) ->
 
 cdef class AbstractBitMap:
     """
@@ -752,6 +795,51 @@ cdef class AbstractBitMap:
         else:
             return TypeError('Indices must be integers or slices, not %s' % type(value))
 
+    def serialize_frozen_view(self):
+        """
+        Return the serialization of the bitmap in immutable frozen format.
+
+        This frozen view format is not portable or stable, and should only be used with
+        the same version of croaring. However the corresponding deserialize_frozen_view
+        operation can be much faster.
+
+        Note also that the frozen_view requires 32 byte alignment of the resulting
+        data - if you serialise and then deserialize the bytes data from this function
+        you need to ensure the resulting memory is respects this alignment - this can
+        be done using the function pyroaring.ensure_frozen_aligned.
+
+        See FrozenBitmap.deserialize_frozen_view for the reverse operation.
+
+        >>> frozen = BitMap([3, 12]).serialize_frozen_view()
+        >>> FrozenBitMap.deserialize_frozen_view(frozen)
+        FrozenBitMap([3, 12])
+
+        The format is not portable or stable, and can't be used with the standard
+        deserialize method:
+        >>> FrozenBitMap.deserialize(frozen)
+        Traceback (most recent call last):
+            ...
+        ValueError: Could not deserialize bitmap
+
+        """
+
+        cdef size_t size = croaring.roaring_bitmap_frozen_size_in_bytes(self._c_bitmap)
+        # Note that the memory needs to be specifically aligned to 32 bytes. This is
+        # also why we need to use a more complicated  return type - if we just return
+        # buff it will be implicitly converted to a python bytes and potentially no
+        # longer aligned.
+        cdef char *buff = <char*>aligned_alloc(32, size)
+        croaring.roaring_bitmap_frozen_serialize(self._c_bitmap, buff)
+
+        cdef cvarray return_array = cvarray(
+            shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+        )
+
+        return_array.data = buff
+        return_array.callback_free_data = free
+
+        return return_array
+
     def serialize(self):
         """
         Return the serialization of the bitmap. See AbstractBitMap.deserialize for the reverse operation.
@@ -765,7 +853,6 @@ cdef class AbstractBitMap:
         result = buff[:size]
         free(buff)
         return result
-
 
     @classmethod
     def deserialize(cls, const unsigned char[:] buff):
@@ -786,11 +873,9 @@ cdef class AbstractBitMap:
         except TypeError:
             self._c_bitmap = deserialize_ptr(state.encode())
 
-
     def __sizeof__(self):
         cdef size_t size = croaring.roaring_bitmap_portable_size_in_bytes(self._c_bitmap)
         return size
-
 
     def to_array(self):
         """

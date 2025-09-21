@@ -918,6 +918,35 @@ class TestSerialization(Util):
                     assert isinstance(new_bm, cls2)
                     self.assert_is_not(old_bm, new_bm)
 
+    @given(bitmap_cls, hyp_collection)
+    def test_frozen_deserialization(
+        self,
+        cls1: type[EitherBitMap],
+        values: HypCollection,
+    ) -> None:
+        old_bm = cls1(values)
+
+        buff = old_bm.serialize_frozen_view()
+        new_bm = FrozenBitMap.deserialize_frozen_view(buff)
+        assert old_bm == new_bm
+
+        # Alignment should not matter for standard serialisation
+        portable = old_bm.serialize()
+        portable_aligned = pyroaring.ensure_frozen_aligned(portable)
+
+        assert bytes(portable_aligned) == portable
+
+        new_bm2 = cls1.deserialize(portable_aligned)
+        assert old_bm == new_bm2
+
+        # Test alignment function
+        # bytes will copy without preserving alignment
+        buff_bytes = bytes(buff)
+        aligned_bytes = pyroaring.ensure_frozen_aligned(buff_bytes)
+
+        new_bm2 = FrozenBitMap.deserialize_frozen_view(aligned_bytes)
+        assert old_bm == new_bm2
+
     @given(bitmap_cls, hyp_collection, st.integers(min_value=2, max_value=pickle.HIGHEST_PROTOCOL))
     def test_pickle_protocol(
         self,
