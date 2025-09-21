@@ -1,4 +1,4 @@
-cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const unsigned char[:] buff):
+cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const char[:] buff):
     cdef croaring.roaring_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
@@ -11,7 +11,7 @@ cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const unsigned char[:] bu
     return ptr
 
 
-cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const unsigned char[:] buff):
+cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const char[:] buff):
     cdef croaring.roaring64_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
@@ -27,7 +27,7 @@ cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const unsigned char[:
 cdef class FrozenBitMap(AbstractBitMap):
 
     @classmethod
-    def deserialize_frozen_view(cls, const unsigned char[:] buff):
+    def deserialize_frozen_view(cls, const char[:] buff):
         """
         Generate a frozen view of the bitmap from the given bytes.
 
@@ -50,7 +50,7 @@ cdef class FrozenBitMap(AbstractBitMap):
 
         The resulting type is a Cython array pointing at the correctly aligned memory.
         >>> frozen  # doctest: +ELLIPSIS
-        <pyroaring.array object at ...>
+        <MemoryView of 'array' at ...>
 
         This can be serialised as bytes or other array objects - but will need to be
         aligned before use. The format is not stable or portable.
@@ -63,14 +63,13 @@ cdef class FrozenBitMap(AbstractBitMap):
         FrozenBitMap([3, 12])
 
         """
-        # TODO: should a reference to buff be kept?
         return (<FrozenBitMap>cls()).from_ptr(deserialize_frozen_ptr(buff)) # FIXME to change when from_ptr is a classmethod
 
 
 cdef class FrozenBitMap64(AbstractBitMap64):
 
     @classmethod
-    def deserialize_frozen_view(cls, const unsigned char[:] buff):
+    def deserialize_frozen_view(cls, const char[:] buff):
         """
         Generate a frozen view of the bitmap from the given bytes.
 
@@ -93,7 +92,7 @@ cdef class FrozenBitMap64(AbstractBitMap64):
 
         The resulting type is a Cython array pointing at the correctly aligned memory.
         >>> frozen  # doctest: +ELLIPSIS
-        <pyroaring.array object at ...>
+        <MemoryView of 'array' at ...>
 
         This can be serialised as bytes or other array objects - but will need to be
         aligned before use. The format is not stable or portable.
@@ -106,5 +105,4 @@ cdef class FrozenBitMap64(AbstractBitMap64):
         FrozenBitMap([3, 12])
 
         """
-        # TODO: should a reference to buff be kept?
         return (<FrozenBitMap64>cls()).from_ptr(deserialize64_frozen_ptr(buff)) # FIXME to change when from_ptr is a classmethod
