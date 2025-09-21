@@ -937,7 +937,8 @@ class TestSerialization(Util):
         new_bm = FrozenBitMap.deserialize_frozen_view(buff)
         assert old_bm == new_bm
 
-        # Alignment should not matter for standard serialisation
+        # Alignment should not matter for standard serialisation/memoryview should still
+        # be identically serialisable.
         portable = old_bm.serialize()
         portable_aligned = pyroaring.ensure_frozen_aligned(portable)
 
@@ -950,6 +951,8 @@ class TestSerialization(Util):
         # bytes will copy without preserving alignment
         buff_bytes = bytes(buff)
         aligned_bytes = pyroaring.ensure_frozen_aligned(buff_bytes)
+
+        assert bytes(aligned_bytes) == buff_bytes
 
         new_bm2 = FrozenBitMap.deserialize_frozen_view(aligned_bytes)
         assert old_bm == new_bm2

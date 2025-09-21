@@ -84,11 +84,11 @@ cdef class FrozenBitMap64(AbstractBitMap64):
 
         See pyroaring.ensure_frozen_aligned if you need to create a frozen_view on bytes
         objects that have been saved/restore, and not directly returned by
-        AbstractBitMap.serialize_frozen_view.
+        AbstractBitMap64.serialize_frozen_view.
 
-        See AbstractBitMap.serialize_frozen_view for the reverse operation.
+        See AbstractBitMap64.serialize_frozen_view for the reverse operation.
 
-        >>> frozen = BitMap([3, 12]).serialize_frozen_view()
+        >>> frozen = BitMap64([3, 12]).serialize_frozen_view()
 
         The resulting type is a Cython array pointing at the correctly aligned memory.
         >>> frozen  # doctest: +ELLIPSIS
@@ -101,8 +101,8 @@ cdef class FrozenBitMap64(AbstractBitMap64):
 
         frozen_views are fast to deserialize, but read-only, and the backing data needs
         to be kept around as long as you want to work the resulting FrozenBitMap
-        >>> FrozenBitMap.deserialize_frozen_view(frozen)
-        FrozenBitMap([3, 12])
+        >>> FrozenBitMap64.deserialize_frozen_view(frozen)
+        FrozenBitMap64([3, 12])
 
         """
         return (<FrozenBitMap64>cls()).from_ptr(deserialize64_frozen_ptr(buff)) # FIXME to change when from_ptr is a classmethod
