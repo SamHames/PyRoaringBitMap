@@ -1,5 +1,5 @@
 cimport croaring
-from libc.stdint cimport uint32_t, uint64_t, int64_t
+from libc.stdint cimport uint32_t, uint64_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libc.stdlib cimport free, malloc
@@ -14,10 +14,6 @@ try:
     range = xrange
 except NameError: # python 3
     pass
-
-
-cdef extern from "<stdlib.h>" nogil:
-    void *aligned_alloc(size_t alignment, size_t size)
 
 
 cdef croaring.roaring_bitmap_t *deserialize_ptr(const unsigned char[:] buff):
@@ -74,20 +70,31 @@ cpdef ensure_frozen_aligned(const unsigned char[:] buff):
 
     """
 
-    size = len(buff)
-    # for 32 bit bitmaps, 32 byte alignment is needed, but we'll align to 64 bytes
-    # to support 64 bit bitmaps as well.
-    cdef char *aligned_buff = <char*>aligned_alloc(64, size)
-    memcpy(aligned_buff, <char*>&buff[0], size)
+    # Overallocate the buffer we're copying into, so we can align out start. It would be
+    # easier to use aligned_alloc, but that seems to not have great cross platform
+    # support. We're allocating to handle the roaring64 and roaring case at the same
+    # time.
+    cdef size_t size = len(buff)
+
+    # An overallocated array - we won't return this directly but a memoryview slice.
+    cdef char *aligned_buff = <char*>malloc(size + 64)
+
+    # Find the starting point that is aligned in the overallocated buffer and use that
+    # as the basis to start writing.
+    cdef size_t offset = <uintptr_t><const void *>aligned_buff % 64
+
+    memcpy(&aligned_buff[offset], <char*>&buff[0], size)
 
     cdef cvarray return_array = cvarray(
-        shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+        shape=(size + 64,), itemsize=sizeof(char), format="b", allocate_buffer=False
     )
 
     return_array.data = aligned_buff
     return_array.callback_free_data = free
 
-    return return_array
+    cdef char[:] arrayview = return_array
+
+    return arrayview[offset: offset+size]
 
 
 def _string_rep(bm):
@@ -827,20 +834,26 @@ cdef class AbstractBitMap:
 
         cdef size_t size = croaring.roaring_bitmap_frozen_size_in_bytes(self._c_bitmap)
         # Note that the memory needs to be specifically aligned to 32 bytes. This is
-        # also why we need to use a more complicated  return type - if we just return
-        # buff it will be implicitly converted to a python bytes and potentially no
-        # longer aligned.
-        cdef char *buff = <char*>aligned_alloc(32, size)
-        croaring.roaring_bitmap_frozen_serialize(self._c_bitmap, buff)
+
+        # An overallocated array - we won't return this directly but a memoryview slice.
+        cdef char *buff = <char*>malloc(size + 32)
+
+        # Find the starting point that is aligned in the overallocated buffer and use that
+        # as the basis to start writing.
+        cdef size_t offset = <uintptr_t><const void *>buff % 32
+
+        croaring.roaring_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
         cdef cvarray return_array = cvarray(
-            shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+            shape=(size + 32,), itemsize=sizeof(char), format="B", allocate_buffer=False
         )
 
         return_array.data = buff
         return_array.callback_free_data = free
 
-        return return_array
+        cdef char[:] arrayview = return_array
+
+        return arrayview[offset: offset+size]
 
     def serialize(self):
         """
@@ -1336,21 +1349,24 @@ cdef class AbstractBitMap64:
         self.shrink_to_fit()
 
         cdef size_t size = croaring.roaring64_bitmap_frozen_size_in_bytes(self._c_bitmap)
-        # Note that the memory needs to be specifically aligned to 64 bytes. This is
-        # also why we need to use a more complicated  return type - if we just return
-        # buff it will be implicitly converted to a python bytes and potentially no
-        # longer aligned.
-        cdef char *buff = <char*>aligned_alloc(64, size)
-        croaring.roaring64_bitmap_frozen_serialize(self._c_bitmap, buff)
+
+        # An overallocated array - we won't return this directly but a memoryview slice.
+        cdef char *buff = <char*>malloc(size + 64)
+
+        # Find the starting point that is aligned in the overallocated buffer and use that
+        # as the basis to start writing.
+        cdef size_t offset = <uintptr_t><const void *>buff % 64
+
+        croaring.roaring64_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
         cdef cvarray return_array = cvarray(
-            shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+            shape=(size+64,), itemsize=sizeof(char), format="B", allocate_buffer=False
         )
 
         return_array.data = buff
         return_array.callback_free_data = free
 
-        return return_array
+        return return_array[offset: offset+size]
 
     def serialize(self):
         """
