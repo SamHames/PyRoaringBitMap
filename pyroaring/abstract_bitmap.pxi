@@ -75,7 +75,9 @@ cpdef ensure_frozen_aligned(const unsigned char[:] buff):
     """
 
     size = len(buff)
-    cdef char *aligned_buff = <char*>aligned_alloc(32, size)
+    # for 32 bit bitmaps, 32 byte alignment is needed, but we'll align to 64 bytes
+    # to support 64 bit bitmaps as well.
+    cdef char *aligned_buff = <char*>aligned_alloc(64, size)
     memcpy(aligned_buff, <char*>&buff[0], size)
 
     cdef cvarray return_array = cvarray(
@@ -1359,6 +1361,54 @@ cdef class AbstractBitMap64:
             return self._get_slice(value)
         else:
             return TypeError('Indices must be integers or slices, not %s' % type(value))
+
+    def serialize_frozen_view(self):
+        """
+        Return the serialization of the bitmap in immutable frozen format.
+
+        This frozen view format is not portable or stable, and should only be used with
+        the same version of croaring. However the corresponding deserialize_frozen_view
+        operation can be much faster.
+
+        Note also that the frozen_view requires 64 byte alignment of the resulting
+        data - if you serialise and then deserialize the bytes data from this function
+        you need to ensure the resulting memory is respects this alignment - this can
+        be done using the function pyroaring.ensure_frozen_aligned.
+
+        See FrozenBitmap.deserialize_frozen_view for the reverse operation.
+
+        >>> frozen = BitMap([3, 12]).serialize_frozen_view()
+        >>> FrozenBitMap.deserialize_frozen_view(frozen)
+        FrozenBitMap([3, 12])
+
+        The format is not portable or stable, and can't be used with the standard
+        deserialize method:
+        >>> FrozenBitMap.deserialize(frozen)
+        Traceback (most recent call last):
+            ...
+        ValueError: Could not deserialize bitmap
+
+        """
+
+        # Unlike 32 bit bitmaps, this *must* be called before creating a frozen view
+        self.shrink_to_fit()
+
+        cdef size_t size = croaring.roaring64_bitmap_frozen_size_in_bytes(self._c_bitmap)
+        # Note that the memory needs to be specifically aligned to 64 bytes. This is
+        # also why we need to use a more complicated  return type - if we just return
+        # buff it will be implicitly converted to a python bytes and potentially no
+        # longer aligned.
+        cdef char *buff = <char*>aligned_alloc(64, size)
+        croaring.roaring64_bitmap_frozen_serialize(self._c_bitmap, buff)
+
+        cdef cvarray return_array = cvarray(
+            shape=(size,), itemsize=sizeof(char), format="B", allocate_buffer=False
+        )
+
+        return_array.data = buff
+        return_array.callback_free_data = free
+
+        return return_array
 
     def serialize(self):
         """
