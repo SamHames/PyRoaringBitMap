@@ -149,6 +149,7 @@ cdef extern from "roaring.h":
     uint64_t roaring64_bitmap_minimum(const roaring64_bitmap_t *r)
     uint64_t roaring64_bitmap_maximum(const roaring64_bitmap_t *r)
     bool roaring64_bitmap_run_optimize(roaring64_bitmap_t *r)
+    size_t roaring64_bitmap_shrink_to_fit(roaring64_bitmap_t *r)
     size_t roaring64_bitmap_size_in_bytes(const roaring64_bitmap_t *r)
     bool roaring64_bitmap_equals(const roaring64_bitmap_t *r1, const roaring64_bitmap_t *r2)
     bool roaring64_bitmap_is_subset(const roaring64_bitmap_t *r1, const roaring64_bitmap_t *r2)
@@ -168,11 +169,19 @@ cdef extern from "roaring.h":
     roaring64_bitmap_t *roaring64_bitmap_andnot(const roaring64_bitmap_t *r1, const roaring64_bitmap_t *r2)
     uint64_t roaring64_bitmap_andnot_cardinality(const roaring64_bitmap_t *r1, const roaring64_bitmap_t *r2)
     void roaring64_bitmap_andnot_inplace(roaring64_bitmap_t *r1, const roaring64_bitmap_t *r2)
+
+    # Portable format de/serialization
     size_t roaring64_bitmap_portable_size_in_bytes(const roaring64_bitmap_t *r)
     size_t roaring64_bitmap_portable_serialize(const roaring64_bitmap_t *r, char *buf)
     size_t roaring64_bitmap_portable_deserialize_size(const char *buf, size_t maxbytes)
     roaring64_bitmap_t *roaring64_bitmap_portable_deserialize_safe(const char *buf, size_t maxbytes)
     bool roaring64_bitmap_internal_validate(const roaring64_bitmap_t *r, const char **reason)
+
+    # Frozen format de/serialization
+    size_t roaring64_bitmap_frozen_size_in_bytes(const roaring64_bitmap_t *ra)
+    void roaring64_bitmap_frozen_serialize(const roaring64_bitmap_t *ra, char *buf)
+    const roaring64_bitmap_t *roaring64_bitmap_frozen_view(const char *buf, size_t maxbytes)
+
     roaring64_iterator_t *roaring64_iterator_create(const roaring64_bitmap_t *r)
     void roaring64_iterator_free(roaring64_iterator_t *it)
     bool roaring64_iterator_has_value(const roaring64_iterator_t *it)
