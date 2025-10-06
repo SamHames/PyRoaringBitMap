@@ -33,6 +33,7 @@ except (IOError, ImportError, RuntimeError):
     print('Could not generate long description.')
     long_description = ''
 
+compile_args = []
 
 if not PLATFORM_WINDOWS:
 
