@@ -34,14 +34,8 @@ except (IOError, ImportError, RuntimeError):
     long_description = ''
 
 
-if PLATFORM_WINDOWS:
-    pyroaring_module = Extension(
-        'pyroaring',
-        sources=[os.path.join(PKG_DIR, 'pyroaring.pyx'), os.path.join(PKG_DIR, 'roaring.c')],
-        language='c++',
-    )
-    libraries = None
-else:
+if not PLATFORM_WINDOWS:
+
     compile_args = ['-D__STDC_LIMIT_MACROS', '-D__STDC_CONSTANT_MACROS', '-D _GLIBCXX_ASSERTIONS']
     if PLATFORM_MACOSX:
         compile_args.append('-mmacosx-version-min=10.14')
@@ -60,24 +54,24 @@ else:
     # else:
     #    compile_args.append('-march=native')
 
-    pyroaring_module = Extension(
-        'pyroaring',
-        sources=[os.path.join(PKG_DIR, 'pyroaring.pyx')],
-        extra_compile_args=compile_args + ["-std=c++11"],
-        language='c++',
-    )
+pyroaring_module = Extension(
+    'pyroaring',
+    sources=[os.path.join(PKG_DIR, 'pyroaring.pyx')],
+    extra_compile_args=compile_args + ["-std=c++11"],
+    language='c++',
+)
 
-    # Because we compile croaring with a c compiler with sometimes incompatible arguments,
-    # define croaring compilation with an extra argument for the c11 standard, which is
-    # required for atomic support.
-    croaring = (
-        'croaring',
-        {
-            'sources': [os.path.join(PKG_DIR, 'roaring.c')],
-            "extra_compile_args": compile_args + ["-std=c11"],
-        },
-    )
-    libraries = [croaring]
+# Because we compile croaring with a c compiler with sometimes incompatible arguments,
+# define croaring compilation with an extra argument for the c11 standard, which is
+# required for atomic support.
+croaring = (
+    'croaring',
+    {
+        'sources': [os.path.join(PKG_DIR, 'roaring.c')],
+        "extra_compile_args": compile_args + ["-std=c11"],
+    },
+)
+libraries = [croaring]
 
 setup(
     name='pyroaring',
@@ -88,7 +82,7 @@ setup(
     version=VERSION,
     description='Library for handling efficiently sorted integer sets.',
     long_description=long_description,
-    setup_requires=['cython>=3.0.2,<3.1.0'],
+    setup_requires=['cython>=3.0.2'],
     url='https://github.com/Ezibenroc/PyRoaringBitMap',
     author='Tom Cornebize',
     author_email='tom.cornebize@gmail.com',
