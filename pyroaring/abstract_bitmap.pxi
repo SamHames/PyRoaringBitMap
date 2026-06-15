@@ -86,14 +86,15 @@ cpdef ensure_frozen_aligned(const unsigned char[:] buff):
 
     memcpy(&aligned_buff[offset], <char*>&buff[0], size)
 
-    cdef cvarray return_array = cvarray(
+    # Create the container Cython array to manage deallocation of the associated buffer
+    cdef cvarray backing_array = cvarray(
         shape=(size + 64,), itemsize=sizeof(char), format="B", allocate_buffer=False
     )
 
-    return_array.data = aligned_buff
-    return_array.callback_free_data = free
+    backing_array.data = aligned_buff
+    backing_array.callback_free_data = free
 
-    cdef char[:] arrayview = return_array
+    cdef const unsigned char[:] arrayview = backing_array
 
     return arrayview[offset: offset+size]
 
@@ -854,7 +855,7 @@ cdef class AbstractBitMap:
         """
 
         cdef size_t size = croaring.roaring_bitmap_frozen_size_in_bytes(self._c_bitmap)
-        # Note that the memory needs to be specifically aligned to 32 bytes. This is
+        # Note that the memory needs to be specifically aligned to 32 bytes.
 
         # An overallocated array - we won't return this directly but a memoryview slice.
         cdef char *buff = <char*>malloc(size + 32)
@@ -866,14 +867,14 @@ cdef class AbstractBitMap:
 
         croaring.roaring_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
-        cdef cvarray return_array = cvarray(
+        cdef cvarray backing_array = cvarray(
             shape=(size + 32,), itemsize=sizeof(char), format="B", allocate_buffer=False
         )
 
-        return_array.data = buff
-        return_array.callback_free_data = free
+        backing_array.data = buff
+        backing_array.callback_free_data = free
 
-        cdef char[:] arrayview = return_array
+        cdef const unsigned char[:] arrayview = backing_array
 
         return arrayview[offset: offset+size]
 
@@ -1420,14 +1421,14 @@ cdef class AbstractBitMap64:
 
         croaring.roaring64_bitmap_frozen_serialize(self._c_bitmap, &buff[offset])
 
-        cdef cvarray return_array = cvarray(
+        cdef cvarray backing_array = cvarray(
             shape=(size + 64,), itemsize=sizeof(char), format="B", allocate_buffer=False
         )
 
-        return_array.data = buff
-        return_array.callback_free_data = free
+        backing_array.data = buff
+        backing_array.callback_free_data = free
 
-        cdef char[:] arrayview = return_array
+        cdef const unsigned char[:] arrayview = backing_array
 
         return arrayview[offset: offset+size]
 

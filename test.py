@@ -925,6 +925,47 @@ class TestSerialization(Util):
                     assert isinstance(new_bm, cls2)
                     self.assert_is_not(old_bm, new_bm)
 
+    @given(bitmap_cls, hyp_many_collections)
+    def test_frozen_deserialization_from_memoryview(
+        self,
+        cls1: type[EitherBitMap],
+        values: list[HypCollection]
+    ) -> None:
+
+        old_bms = [cls1(vals) for vals in values]
+
+        # Create a memoryview with all of the items concatenated into a single bytes
+        # object, taking into account padding requirements.
+        start = 0
+        extents = []
+        serialized = []
+
+        for bm in old_bms:
+            frozen = bm.serialize_frozen_view()
+            serialized.append(frozen)
+
+            size = len(frozen)
+            end = start + size
+
+            extents.append((start, end))
+
+            padding_needed = 64 - (end % 64)
+
+            start = end + padding_needed
+            serialized.append(bytes(padding_needed))
+
+        combined = pyroaring.ensure_frozen_aligned(b''.join(serialized))
+
+        with memoryview(combined) as mv:
+
+            new_bms = [
+                FrozenBitMap.deserialize_frozen_view(mv[start: end])
+                for start, end in extents
+            ]
+            for old_bm, new_bm in zip(old_bms, new_bms):
+                assert old_bm == new_bm
+                self.assert_is_not(old_bm, new_bm)
+
     @given(bitmap_cls, hyp_collection)
     def test_frozen_deserialization(
         self,
