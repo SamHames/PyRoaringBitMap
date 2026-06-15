@@ -1,4 +1,4 @@
-cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const char[:] buff):
+cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const unsigned char[:] buff):
     cdef croaring.roaring_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
@@ -8,10 +8,16 @@ cdef croaring.roaring_bitmap_t *deserialize_frozen_ptr(const char[:] buff):
     if ptr == NULL:
       raise ValueError("Could not deserialize bitmap")
 
+    # Validate the bitmap
+    if not croaring.roaring_bitmap_internal_validate(ptr, &reason_failure):
+        # If validation fails, free the bitmap and raise an exception
+        croaring.roaring_bitmap_free(ptr)
+        raise ValueError(f"Invalid bitmap after deserialization: {reason_failure.decode('utf-8')}")
+
     return ptr
 
 
-cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const char[:] buff):
+cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const unsigned char[:] buff):
     cdef croaring.roaring64_bitmap_t *ptr
     cdef const char *reason_failure = NULL
 
@@ -21,13 +27,19 @@ cdef croaring.roaring64_bitmap_t *deserialize64_frozen_ptr(const char[:] buff):
     if ptr == NULL:
       raise ValueError("Could not deserialize bitmap")
 
+    # Validate the bitmap
+    if not croaring.roaring64_bitmap_internal_validate(ptr, &reason_failure):
+        # If validation fails, free the bitmap and raise an exception
+        croaring.roaring64_bitmap_free(ptr)
+        raise ValueError(f"Invalid bitmap after deserialization: {reason_failure.decode('utf-8')}")
+
     return ptr
 
 
 cdef class FrozenBitMap(AbstractBitMap):
 
     @classmethod
-    def deserialize_frozen_view(cls, const char[:] buff):
+    def deserialize_frozen_view(cls, const unsigned char[:] buff):
         """
         Generate a frozen view of the bitmap from the given bytes.
 
@@ -69,7 +81,7 @@ cdef class FrozenBitMap(AbstractBitMap):
 cdef class FrozenBitMap64(AbstractBitMap64):
 
     @classmethod
-    def deserialize_frozen_view(cls, const char[:] buff):
+    def deserialize_frozen_view(cls, const unsigned char[:] buff):
         """
         Generate a frozen view of the bitmap from the given bytes.
 
