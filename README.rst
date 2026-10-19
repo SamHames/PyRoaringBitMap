@@ -43,7 +43,7 @@ Multiple threads can read a bitmap concurrently, but need a lock if one of them 
 Installation from Pypi with pip
 -------------------------------
 
-Supported systems: Linux, MacOS or Windows, Python 3.9 or higher. Note that pyroaring might still work with older Python
+Supported systems: Linux, MacOS or Windows, Python 3.10 or higher. Note that pyroaring might still work with older Python
 versions, but they are not tested anymore.
 
 It is recommended to install pyroaring in a virtual environment to avoid conflicts with system packages.

@@ -56,7 +56,7 @@ jobs:
           CIBW_TEST_REQUIRES: hypothesis pytest
           CIBW_TEST_ENVIRONMENT: PIP_ONLY_BINARY=hypothesis  # no cp314t armv7l wheel, building the Rust sdist hangs
           CIBW_TEST_COMMAND: "pytest {project}/test.py -v && python {project}/cydoctest.py -v"
-          CIBW_SKIP: "cp38-*"
+          CIBW_SKIP: "cp38-* cp39-*"
           CIBW_ARCHS_LINUX: ${{ runner.arch == 'X64' && 'auto' || 'auto armv7l' }}
           CIBW_ARCHS_MACOS: ${{ runner.arch == 'X64' && 'auto' || 'auto universal2' }}
           CIBW_ARCHS_WINDOWS: "auto ARM64"
