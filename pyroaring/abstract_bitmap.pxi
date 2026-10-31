@@ -49,6 +49,66 @@ cdef croaring.roaring64_bitmap_t *deserialize64_ptr(const unsigned char[:] buff)
     return ptr
 
 
+def create_frozen_aligned_mmap_from_bitmaps(mmap_location, bitmaps):
+    """
+    Write bitmaps in frozen serialized form to the given mmap_location.
+
+    Each bitmap is written with appropriate padding to be used as a frozen view.
+
+    Returns a list of start/end extents in bytes for each bitmap in order for reading.
+
+    The resulting file can be mmap'ed and read from multiple processes: the backing
+    memory for the bitmap will only be loaded once and shared across all processes.
+
+    Note that to deserialize from an mmap you must also use a memoryview around the
+    mmap'ed file: using the slice operator (`[]`) on an mmap copies bytes, which will
+    not retain the necessary memory alignment for reading a frozen view.
+
+    Example of creating an mmap and reading from it with
+    `FrozenBitMap.deserialize_frozen_view`:
+
+    >>> import tempfile
+    >>> import mmap
+    >>> bitmaps = [BitMap(range(i, i+10)) for i in range(0, 100, 10)]
+    >>> with tempfile.TemporaryDirectory() as mmap_dir:
+    ...     mmap_loc = mmap_dir + '/.mmap'
+    ...     # Create the memory mapped file to read from
+    ...     extents = create_frozen_aligned_mmap_from_bitmaps(mmap_loc, bitmaps)
+    ...     # Create frozen views from the mmap'ed file
+    ...     with open(mmap_loc, 'r') as read_mmap:
+    ...          mm = mmap.mmap(read_mmap.fileno(), 0, access=mmap.ACCESS_READ)
+    ...          mv = memoryview(mm) # Note that this is essential
+    ...          frozen_bms = [FrozenBitMap.deserialize_frozen_view(mv[start:end]) for start, end in extents]
+    ...          len(BitMap.union(*frozen_bms))
+    100
+
+    """
+
+    current_offset = 0
+    bitmap_extents = []
+
+    with open(mmap_location, 'wb') as write_mmap:
+
+        for bm in bitmaps:
+            to_write = bm.serialize_frozen_view()
+            write_length = len(to_write)
+
+            write_mmap.write(to_write)
+
+            bitmap_extents.append((current_offset, current_offset + write_length))
+
+            # Pad to align the next bitmap on the appropriate boundary.
+            current_offset += write_length
+
+            consumed_alignment = current_offset % 64
+
+            if consumed_alignment:
+                current_offset += 64 - consumed_alignment
+                write_mmap.write(b'\0' * (64 - consumed_alignment))
+
+    return bitmap_extents
+
+
 cpdef ensure_frozen_aligned(const unsigned char[:] buff):
     """
     Return a form of the input data that is guaranteed to be aligned for frozen views.
