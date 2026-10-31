@@ -53,7 +53,7 @@ cdef class FrozenBitMap(AbstractBitMap):
         buffer must be around for as long as this FrozenBitMap is.
 
         See pyroaring.ensure_frozen_aligned if you need to create a frozen_view on bytes
-        objects that have been saved/restore, and not directly returned by
+        objects that have been saved/restored, and not directly returned by
         AbstractBitMap.serialize_frozen_view.
 
         See AbstractBitMap.serialize_frozen_view for the reverse operation.
@@ -95,7 +95,7 @@ cdef class FrozenBitMap64(AbstractBitMap64):
         buffer must be around for as long as this FrozenBitMap is.
 
         See pyroaring.ensure_frozen_aligned if you need to create a frozen_view on bytes
-        objects that have been saved/restore, and not directly returned by
+        objects that have been saved/restored, and not directly returned by
         AbstractBitMap64.serialize_frozen_view.
 
         See AbstractBitMap64.serialize_frozen_view for the reverse operation.
